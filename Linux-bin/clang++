@@ -1,0 +1,107 @@
+#!/bin/sh
+#
+# musl-clang: A clang wrapper for musl C library.
+#             Supports static linking. (-static)
+#
+# WARNING: This is not a perfect drop-in replacement
+#
+# Modified for macOS.
+# See https://github.com/esjeon/musl-clang/blob/master/LICENSE for the license
+#
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# Target triplet
+PREFIX=$SCRIPT_DIR/../Linux/
+if [ -n "$TARGET_TRIPLET" ] ; then
+    # Whatever
+    echo -n
+else
+    TARGET_TRIPLET=x86_64-linux-musl
+fi
+
+if [ ! -d "${PREFIX}" ]; then
+    echo "invalid prefix: ${PREFIX}"
+    return 1
+fi
+
+PREFIX_CC=/usr/bin/
+
+CPP=no
+
+case "$0" in
+    *++) CPP="yes" ;;
+esac
+
+if [ "${CPP}" = "yes" ]; then
+    CLANG="clang++ -fuse-ld=lld"
+else
+    CLANG="clang -fuse-ld=lld"
+fi
+
+if type xcrun > /dev/null; then
+	LD_PATH=$SCRIPT_DIR/../MacBins/ld.lld
+	if [ "${CPP}" = "yes" ]; then
+    	CLANG="clang++ -fuse-ld=${LD_PATH}"
+	else
+		CLANG="clang -fuse-ld=${LD_PATH}"
+	fi
+fi
+
+hasNo() {
+    pat="$1"
+    shift 1
+
+    for e in "$@"; do
+        if [ "$e" = "${pat}" ]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+ARGS="-nostdinc"
+TAIL=""
+ARGS="${ARGS} -static -target ${TARGET_TRIPLET}"
+if hasNo '-nostdinc' "$@"; then
+    ARGS="${ARGS} -isystem ${PREFIX}/libgcc/${TARGET_TRIPLET}/9.2.1/include"
+    if [ "${CPP}" = "yes" ]; then
+        ARGS="${ARGS} -nostdinc -nostdinc++ -isystem ${PREFIX}/${TARGET_TRIPLET}/include/c++/9.2.1 -isystem ${PREFIX}/${TARGET_TRIPLET}/include/c++/9.2.1/${TARGET_TRIPLET} -isystem ${PREFIX}/${TARGET_TRIPLET}/include"
+    else 
+        ARGS="${ARGS} -isystem ${PREFIX}/${TARGET_TRIPLET}/include"
+    fi
+fi
+
+if \
+    hasNo '-c' "$@" && \
+    hasNo '-S' "$@" && \
+    hasNo '-E' "$@"
+then
+    ARGS="${ARGS} -nostdlib"
+    ARGS="${ARGS} -L${PREFIX}/${TARGET_TRIPLET}/lib"
+    ARGS="${ARGS} -Wl,-rpath=${PREFIX}/${TARGET_TRIPLET}/lib"
+
+    if hasNo '-nostartfiles' "$@" && \
+       hasNo '-nostdlib' "$@" && \
+       hasNo '-nodefaultlibs' "$@"
+    then
+        ARGS="${ARGS} -Xlinker ${PREFIX}/${TARGET_TRIPLET}/lib/crt1.o"
+        ARGS="${ARGS} -Xlinker ${PREFIX}/${TARGET_TRIPLET}/lib/crti.o"
+
+# Compiler runtime. Currently using the GCC RT library.
+	ARGS="${ARGS} -Xlinker ${PREFIX}/libgcc/${TARGET_TRIPLET}/9.2.1/libgcc.a -Xlinker ${PREFIX}/libgcc/${TARGET_TRIPLET}/9.2.1/libgcc_eh.a"
+
+        TAIL="${TAIL} -Xlinker ${PREFIX}/${TARGET_TRIPLET}/lib/crtn.o"
+    fi
+
+    if hasNo '-nostdlib' "$@" && \
+       hasNo '-nodefaultlibs' "$@"
+    then
+        if [ "${CPP}" = "yes" ]; then
+            TAIL="${TAIL} -lstdc++"
+            TAIL="${TAIL} -lm"
+        fi
+        TAIL="${TAIL} -lc"
+    fi
+fi
+
+exec ${PREFIX_CC}${CLANG} ${ARGS} "$@" ${TAIL}

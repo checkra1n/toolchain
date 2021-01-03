@@ -1,0 +1,6 @@
+Sysroots from musl.cc were used.
+
+Base sysroot for Windows (completed with libgcc with MinGW w/ GCC 9.1.0 from Homebrew):
+
+https://github.com/mstorsjo/llvm-mingw/releases/tag/20190920
+

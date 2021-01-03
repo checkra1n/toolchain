@@ -1,0 +1,44 @@
+#!/bin/bash
+# Nonfunctional for now I'm afraid, it tries to link as a mach-o
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+if [ -n "$TARGET_TRIPLET" ] ; then
+    # Whatever
+    echo -n
+else
+    TARGET_TRIPLET=aarch64-linux-elf
+fi
+PREFIX=$SCRIPT_DIR/../BareMetal/aarch64-elf
+
+# Compiler
+PREFIX_CC="/usr/bin/"
+CPP=no
+case "$0" in
+    *++) CPP=yes ;;
+esac
+
+if [ ! -d "${PREFIX}" ]; then
+    echo "invalid prefix: ${PREFIX}"
+    return 1
+fi
+
+hasNo() {
+    pat="$1"
+    shift 1
+
+    for e in "$@"; do
+        if [ "$e" = "${pat}" ]; then
+            return 1
+        fi
+    done
+    return 0
+}
+if \
+    hasNo '-c' "$@" && \
+    hasNo '-S' "$@" && \
+    hasNo '-E' "$@"
+then
+        exec clang  -nostartfiles -fuse-ld=/usr/bin/ld.lld -ffreestanding -static -L$HOME/toolchain/BareMetal/lib/gcc/aarch64-elf/8.3.0 -target $TARGET_TRIPLET --sysroot=$PREFIX -isysroot $PREFIX -isystem $PREFIX/include "$@" $HOME/toolchain/BareMetal/lib/gcc/aarch64-elf/8.3.0/crtbegin.o $HOME/toolchain/BareMetal/lib/gcc/aarch64-elf/8.3.0/crtend.o $HOME/toolchain/BareMetal/lib/gcc/aarch64-elf/8.3.0/crti.o $HOME/toolchain/BareMetal/lib/gcc/aarch64-elf/8.3.0/crtn.o $HOME/toolchain/BareMetal/aarch64-elf/lib/crt0.o
+else
+	exec clang  -static -target $TARGET_TRIPLET --sysroot=$PREFIX "$@"
+fi

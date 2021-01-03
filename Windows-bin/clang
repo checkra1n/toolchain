@@ -1,0 +1,38 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+PREFIX=$SCRIPT_DIR/../Windows
+
+if [ -n "$TARGET_TRIPLET" ] ; then
+    # Whatever
+    echo -n
+else
+    TARGET_TRIPLET=x86_64-w64-mingw32
+fi
+
+
+# Compiler
+PREFIX_CC="/usr/bin/"
+CPP=no
+case "$0" in
+    *++) CPP=yes ;;
+esac
+
+if type xcrun > /dev/null; then
+        LD_PATH=$SCRIPT_DIR/../MacBins/ld.lld
+        if [ "${CPP}" = "yes" ]; then
+        CLANG="clang++ -fuse-ld=${LD_PATH}"
+        else
+                CLANG="clang -fuse-ld=${LD_PATH}"
+        fi
+fi
+
+if [ ! -d "${PREFIX}" ]; then
+    echo "invalid prefix: ${PREFIX}"
+    return 1
+fi
+
+
+# Ugh, no way to change compiler-rt path yet that I know of.
+exec ${PREFIX_CC}${CLANG} --sysroot=$PREFIX -isysroot $PREFIX -target $TARGET_TRIPLET "$@"
+
