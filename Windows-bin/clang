@@ -21,7 +21,7 @@ esac
 if type xcrun > /dev/null; then
         LD_PATH=$SCRIPT_DIR/../MacBins/ld.lld
         if [ "${CPP}" = "yes" ]; then
-        CLANG="clang++ -fuse-ld=${LD_PATH}"
+        CLANG="clang++ -fuse-ld=${LD_PATH} -stdlib=libc++"
         else
                 CLANG="clang -fuse-ld=${LD_PATH}"
         fi
