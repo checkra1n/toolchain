@@ -17,6 +17,7 @@ For Linux:
 - arm-linux-musleabi (ARMv5T onwards)
 - aarch64-linux-musl (ARMv8-A AArch64)
 - x86_64-linux-musl  (AMD64)
+- i486-linux-musl (i486 onwards)
 
 For Windows:
 
@@ -25,6 +26,5 @@ For Windows:
 
 *What's the catch?*
 
-Apple LLVMs do not have LLD. As such you'll need to use an llvm.org (or any other non-Apple one!)
-on macOS.
+Apple LLVMs do not have LLD. An LLD is as such included in this repository for macOS use.
 
