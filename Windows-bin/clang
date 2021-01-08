@@ -18,13 +18,19 @@ case "$0" in
     *++) CPP=yes ;;
 esac
 
-if type xcrun > /dev/null; then
+if type xcrun &> /dev/null; then
         LD_PATH=$SCRIPT_DIR/../MacBins/ld.lld
         if [ "${CPP}" = "yes" ]; then
-        CLANG="clang++ -fuse-ld=${LD_PATH} -stdlib=libc++"
+       		CLANG="clang++ -fuse-ld=${LD_PATH}"
         else
                 CLANG="clang -fuse-ld=${LD_PATH}"
         fi
+else
+	if [ "${CPP}" = "yes" ]; then
+        	CLANG="clang++ -fuse-ld=lld"
+        else
+		CLANG="clang -fuse-ld=lld"
+	fi
 fi
 
 if [ ! -d "${PREFIX}" ]; then
